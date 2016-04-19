@@ -1,4 +1,6 @@
+from lxml import html
 import requests
+import bs4
 
 # FUNCTIONS
 def download_website(website,file_name):
@@ -32,7 +34,15 @@ def main(websites):
     print 'Downloaded websites'
 
 
+response = requests.get('http://www.spine-health.com/forum/categories/lower-back-pain')
+soup = bs4.BeautifulSoup(response.text)
+print soup
+links = soup.select('#Body a[href^=http://www.spine-health.com/forum/discussion]')
+print links
+print len(links)
 
+response = requests.get('http://pyvideo.org/category/50/pycon-us-2014')
+links = soup.select('div.video-summary-data a[href^=/video]')
 
 # MAIN CODE
 # if __name__="__main__":
@@ -52,37 +62,3 @@ websites = ['http://www.whattoexpect.com/forums/complications/topic/abnormal-lab
             'http://www.whattoexpect.com/forums/complications/topic/baby-is-here-3285.html',
             'http://www.whattoexpect.com/forums/complications/topic/cerclage-and-still-bleeding-help.html',
             'http://www.whattoexpect.com/forums/complications/topic/toxoplasmosis-question-48.html']
-
-
-
-# link 1
-# 4/12; 2:55pm
-# physical therapy for several months - no relief.
-# Symptoms getting worse.
-# Bulge on L4-L5
-# Foot feels broken and lower back and rear end constanting burning
-# Two small children, one is an infant so wanting to avoid surgery
-# Surgery may be only hope
-# Neurologist doing some shots but I don't see him until Monday
-
-# link 2
-# 4/9; 2:03pm
-# 6 months ago, pretty severe lumbar pain, apparent when bending down - so thought muscular
-# February, saw orthopedist, x-ray, told slight scoliosis, but most likely won't cause it
-# Cause of bending over, I felt stabbing pain, so got a second opinion at neurologist, ordered MRI with and without contract
-# MRI showed everything normal, but still in severe pain
-# Diagnosed with sciatica due to shooting, sharop, pains down my leg - told to take aleve and maybe PT
-# Lost of what to do, as nothing helps, nor any diagnosis
-# Orthopedist visit gave exercises that couldn't be completed due to excrutiating pain
-# Morning, pains seems more severe
-# No injuries over last 6 months to have caused such a thing
-# Believe is muscular but wouldn't cause pain and would have healed by now
-# Heard MRIs aren't good for diagnosing problems with lumbar spine
-# Feel pain is most severe if bending slightly backwards and bending over
-
-# Diagnosis - Sciatica, Bulging disks L4-L5
-# Specialists - Neurologist for pain shots; orthopedist for exercises
-# Symptoms - Foot broken, lower back/rear end constant burning; worse in the morning
-# Physical Therapy - didn't work
-# Time Duration - 6 months ago thought it was muscle problem
-# Psychosocial Aspects - have 2 small children and want to avoid surgery; heard MRIs are no use
