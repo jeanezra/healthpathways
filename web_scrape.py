@@ -15,8 +15,8 @@ def download_website(website,file_name):
     file.close()
 
 
-def naming_links(prefix):
-    num = range(1,6)
+def naming_links(prefix,num_files):
+    num = range(1,num_files+1)
     file_names = [prefix + '_' + str(c) + '.txt' for c in num]
     print file_names
     return file_names
@@ -28,21 +28,40 @@ def site_iterator(websites,file_names):
         print 'Created ', j
 
 
-def main(websites):
-    file_names = naming_links('preg')
+def main(websites,prefix,num_files):
+    file_names = naming_links(prefix,num_files)
     site_iterator(websites,file_names)
     print 'Downloaded websites'
 
 
 response = requests.get('http://www.spine-health.com/forum/categories/lower-back-pain')
 soup = bs4.BeautifulSoup(response.text)
-print soup
-links = soup.select('#Body a[href^=http://www.spine-health.com/forum/discussion]')
+# links = soup.select('#Body a[href^=http://www.spine-health.com/forum/discussion]')
+links = [a.attrs.get('href') for a in soup.select('#Body a[href^=http://www.spine-health.com/forum/discussion]')]
 print links
 print len(links)
 
-response = requests.get('http://pyvideo.org/category/50/pycon-us-2014')
-links = soup.select('div.video-summary-data a[href^=/video]')
+def unique_links(input):
+    output = []
+    for x in input:
+        if x not in output:
+            output.append(x)
+    return output
+
+links_unq = unique_links(links)
+print len(links_unq)
+
+matching = [s for s in links_unq if "#latest" in s]
+len(matching)
+main(matching,'lbp',30)
+
+def get_patient_data(patient_page_url):
+    response = requests.get('http://www.spine-health.com/forum/discussion/77790/pain/lower-back-pain/lumbar-spine-locked#latest')
+    soup = bs4.BeautifulSoup(response.text)
+    patient_data = {}
+    patient_data['message'] = soup.select('.Message').get_text()
+    patient_data['speakers'] = [a.get_text() for a in soup.select('div#sidebar a[href^=/speaker]')]
+    patient_data['youtube_url'] = soup.select('div#sidebar a[href^=http://www.youtube.com]')[0].get_text()
 
 # MAIN CODE
 # if __name__="__main__":
