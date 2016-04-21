@@ -59,7 +59,11 @@ def get_patient_data(patient_page_url):
     response = requests.get('http://www.spine-health.com/forum/discussion/77790/pain/lower-back-pain/lumbar-spine-locked#latest')
     soup = bs4.BeautifulSoup(response.text)
     patient_data = {}
-    patient_data['message'] = soup.select('.Message').get_text()
+    patient_data['message'] = soup.select('.Message')[0].get_text()
+    patient_data['title'] = soup.select('.Username')[0].get_text()
+    patient_data['post_cnt'] = soup.select('.MItem.PostCount')[0].get_text()
+    patient_data['time'] = soup.select('.time')[0].get_text()
+
     patient_data['speakers'] = [a.get_text() for a in soup.select('div#sidebar a[href^=/speaker]')]
     patient_data['youtube_url'] = soup.select('div#sidebar a[href^=http://www.youtube.com]')[0].get_text()
 
