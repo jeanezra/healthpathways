@@ -98,6 +98,8 @@ def title_data(soup):
     return df_title
 
 
+df_title = title_data(soup)
+
 # Data
 # Distributions
 # Length per post
@@ -112,6 +114,8 @@ def messages_date():
     df_msg_describe.columns = ['msg_' + c for c in cols]
     return df_msg_describe
     
+df_msg = messages_date()
+
 
 # Author post history
 def posts_cnt_data():
@@ -122,11 +126,13 @@ def posts_cnt_data():
     print posts_cnts
     df_posts_cnts = pd.DataFrame(posts_cnts)
     df_strip = df_posts_cnts[0].apply(lambda x: int(x.strip('Posts: ').replace(',','')))
-    print df_strip.describe()
     df_strip_describe = DataFrame(df_strip.describe()).T
     cols = df_strip_describe.columns
     df_strip_describe.columns = ['postshistory_' + c for c in cols]
     return df_strip_describe
+
+
+df_posts = posts_cnt_data()
 
 
 # Post created dates
@@ -146,7 +152,6 @@ def posts_create_data():
     df_create_dates = pd.DataFrame(create_dates)
     df_create_dates[1] = df_create_dates[0].apply(lambda x: x.replace('\n',''))
     df_create_dates['date'] = df_create_dates[1].apply(lambda x: pd.to_datetime(x))
-    print df_create_dates['date']
     date_size = len(df_create_dates)
     df_next = df_create_dates['date'].ix[1:date_size-1].reset_index()
     df_next.columns = ['index','next_date']
@@ -158,6 +163,16 @@ def posts_create_data():
     return dfs
 
 
+df_date = posts_create_data()
+
+
+def combine_data(title,author,posts,create,file,write_mode):
+    all_data = pd.concat([title,author,posts,create],axis=1)
+    print all_data.shape
+    all_data.to_csv(file,delimiter=',',header=True,index=True,mode=write_mode)
+
+
+combine_data(df_title,df_msg,df_posts,df_date,'lower_back_pain.csv','w')
 
 # updated = scrape_element('updated', '.DateUpdated')
 # author = scrape_element('author', '.Author')
