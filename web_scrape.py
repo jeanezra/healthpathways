@@ -1,6 +1,7 @@
 import requests
 import bs4
 import pandas as pd
+from pandas import DataFrame
 
 
 # FUNCTIONS
@@ -85,37 +86,81 @@ def scrape_element(prefix, element):
 
 response = requests.get('http://www.spine-health.com/forum/discussion/77790/pain/lower-back-pain/lumbar-spine-locked#latest')
 soup = bs4.BeautifulSoup(response.text)
+
+
 # Metadata
 # forum = scrape_element('forum', '.MItem.Category')
-title = soup.find('div', class_='PageTitle').h1
-# Data
+def title_data(soup):
+    title = str(soup.find('div', class_='PageTitle').h1)
+    title_text = title.replace('<h1>','').replace('</h1>','')
+    df_title = DataFrame(pd.Series(len(title_text)))
+    df_title.columns = ['title_length']
+    return df_title
 
+
+# Data
 # Distributions
 # Length per post
-messages = scrape_element('messages', '.Message')
-msg_lengths = []
-for k,v in messages.items():
-    msg_lengths.append(len(v))
-
-df_msg_lgth = pd.DataFrame(msg_lengths)
-df_msg_lgth.describe()
+def messages_date():
+    messages = scrape_element('messages', '.Message')
+    msg_lengths = []
+    for k,v in messages.items():
+        msg_lengths.append(len(v))
+    df_msg_lgth = DataFrame(msg_lengths)
+    df_msg_describe = DataFrame(df_msg_lgth.describe()).T
+    cols = df_msg_describe.columns
+    df_msg_describe.columns = ['msg_' + c for c in cols]
+    return df_msg_describe
+    
 
 # Author post history
-posts_cnt = scrape_element('posts_cnt', '.MItem.PostCount')
-posts_cnts = []
-for k,v in posts_cnt.items():
-    posts_cnts.append(v)
+def posts_cnt_data():
+    posts_cnt = scrape_element('posts_cnt', '.MItem.PostCount')
+    posts_cnts = []
+    for k,v in posts_cnt.items():
+        posts_cnts.append(v)
+    print posts_cnts
+    df_posts_cnts = pd.DataFrame(posts_cnts)
+    df_strip = df_posts_cnts[0].apply(lambda x: int(x.strip('Posts: ').replace(',','')))
+    print df_strip.describe()
+    df_strip_describe = DataFrame(df_strip.describe()).T
+    cols = df_strip_describe.columns
+    df_strip_describe.columns = ['postshistory_' + c for c in cols]
+    return df_strip_describe
 
-print posts_cnts
-df_posts_cnts = pd.DataFrame(posts_cnts)
-df_strip = df_posts_cnts[0].apply(lambda x: int(x.strip('Posts: ').replace(',','')))
-df_strip.describe()
+
+# Post created dates
+def create_date_diff(df_create,var,prefix):
+    df_create_describe = DataFrame(df_create[[var]].describe()).T
+    cols = df_create_describe.columns
+    df_create_describe.columns = [prefix + c for c in cols]
+    return df_create_describe
+
+
+def posts_create_data():
+    created = scrape_element('created', '.MItem.DateCreated')
+    create_dates = []
+    for k,v in created.items():
+        create_dates.append(v)
+    print create_dates
+    df_create_dates = pd.DataFrame(create_dates)
+    df_create_dates[1] = df_create_dates[0].apply(lambda x: x.replace('\n',''))
+    df_create_dates['date'] = df_create_dates[1].apply(lambda x: pd.to_datetime(x))
+    print df_create_dates['date']
+    date_size = len(df_create_dates)
+    df_next = df_create_dates['date'].ix[1:date_size-1].reset_index()
+    df_next.columns = ['index','next_date']
+    df_now_next = DataFrame(df_create_dates['date']).join(DataFrame(df_next['next_date']))
+    df_now_next['diff'] = df_now_next['next_date'] - df_now_next['date']
+    df_date = create_date_diff(df_now_next,'date','create_').reset_index().drop('index',1)
+    df_diff = create_date_diff(df_now_next,'diff','datediff_').reset_index().drop('index',1)
+    dfs = pd.concat([df_date,df_diff],axis=1)
+    return dfs
 
 
 
-created = scrape_element('created', '.MItem.DateCreated')
-updated = scrape_element('updated', '.DateUpdated')
-author = scrape_element('author', '.Author')
+# updated = scrape_element('updated', '.DateUpdated')
+# author = scrape_element('author', '.Author')
 
 # MAIN CODE
 # if __name__="__main__":
