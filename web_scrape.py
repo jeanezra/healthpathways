@@ -2,6 +2,8 @@ import requests
 import bs4
 import pandas as pd
 from pandas import DataFrame
+import numpy as np
+from datetime import datetime
 
 
 # FUNCTIONS
@@ -53,10 +55,6 @@ def scrape_links(link):
     print len(links)
     return links
 
-forum_link = 'http://www.spine-health.com/forum/categories/lower-back-pain'
-
-web_links = scrape_links(forum_link)
-
 
 # Find unique links
 def scrape_unique_links(links):
@@ -65,13 +63,11 @@ def scrape_unique_links(links):
     matching = [s for s in links_unq if "#latest" in s]
     print len(matching)
     download_iterator(matching, 'lbp', len(links_unq))
-
-
-scrape_unique_links(web_links)
+    return matching
 
 
 # Scraping page
-def scrape_element(prefix, element):
+def scrape_element(soup, prefix, element):
     msgs = soup.select(element)
     length = len(msgs)
     print length
@@ -83,100 +79,106 @@ def scrape_element(prefix, element):
     return element_dict
 
 
-
-response = requests.get('http://www.spine-health.com/forum/discussion/77790/pain/lower-back-pain/lumbar-spine-locked#latest')
-soup = bs4.BeautifulSoup(response.text)
-
-
 # Metadata
 # forum = scrape_element('forum', '.MItem.Category')
 def title_data(soup):
     title = str(soup.find('div', class_='PageTitle').h1)
-    title_text = title.replace('<h1>','').replace('</h1>','')
+    title_text = title.replace('<h1>', '').replace('</h1>', '')
     df_title = DataFrame(pd.Series(len(title_text)))
     df_title.columns = ['title_length']
     return df_title
 
 
-df_title = title_data(soup)
-
 # Data
 # Distributions
 # Length per post
-def messages_date():
-    messages = scrape_element('messages', '.Message')
+def messages_date(soup):
+    messages = scrape_element(soup, 'messages', '.Message')
     msg_lengths = []
-    for k,v in messages.items():
+    for k, v in messages.items():
         msg_lengths.append(len(v))
     df_msg_lgth = DataFrame(msg_lengths)
     df_msg_describe = DataFrame(df_msg_lgth.describe()).T
     cols = df_msg_describe.columns
     df_msg_describe.columns = ['msg_' + c for c in cols]
     return df_msg_describe
-    
-df_msg = messages_date()
 
 
 # Author post history
-def posts_cnt_data():
-    posts_cnt = scrape_element('posts_cnt', '.MItem.PostCount')
+def posts_cnt_data(soup):
+    posts_cnt = scrape_element(soup, 'posts_cnt', '.MItem.PostCount')
     posts_cnts = []
-    for k,v in posts_cnt.items():
+    for k, v in posts_cnt.items():
         posts_cnts.append(v)
     print posts_cnts
     df_posts_cnts = pd.DataFrame(posts_cnts)
-    df_strip = df_posts_cnts[0].apply(lambda x: int(x.strip('Posts: ').replace(',','')))
+    df_strip = df_posts_cnts[0].apply(lambda x: int(x.strip('Posts: ').replace(',', '')))
     df_strip_describe = DataFrame(df_strip.describe()).T
     cols = df_strip_describe.columns
     df_strip_describe.columns = ['postshistory_' + c for c in cols]
     return df_strip_describe
 
 
-df_posts = posts_cnt_data()
-
-
 # Post created dates
-def create_date_diff(df_create,var,prefix):
+def create_date_diff(df_create, var, prefix):
     df_create_describe = DataFrame(df_create[[var]].describe()).T
     cols = df_create_describe.columns
     df_create_describe.columns = [prefix + c for c in cols]
     return df_create_describe
 
 
-def posts_create_data():
-    created = scrape_element('created', '.MItem.DateCreated')
+def posts_create_data(soup):
+    created = scrape_element(soup, 'created', '.MItem.DateCreated')
     create_dates = []
-    for k,v in created.items():
+    for k, v in created.items():
         create_dates.append(v)
     print create_dates
     df_create_dates = pd.DataFrame(create_dates)
-    df_create_dates[1] = df_create_dates[0].apply(lambda x: x.replace('\n',''))
+    df_create_dates[1] = df_create_dates[0].apply(lambda x: x.replace('\n', '').replace('Today',datetime.today().strftime("%m/%d/%Y")))
     df_create_dates['date'] = df_create_dates[1].apply(lambda x: pd.to_datetime(x))
     date_size = len(df_create_dates)
-    df_next = df_create_dates['date'].ix[1:date_size-1].reset_index()
-    df_next.columns = ['index','next_date']
+    df_next = df_create_dates['date'].ix[1:date_size - 1].reset_index()
+    df_next.columns = ['index', 'next_date']
     df_now_next = DataFrame(df_create_dates['date']).join(DataFrame(df_next['next_date']))
-    df_now_next['diff'] = df_now_next['next_date'] - df_now_next['date']
-    df_date = create_date_diff(df_now_next,'date','create_').reset_index().drop('index',1)
-    df_diff = create_date_diff(df_now_next,'diff','datediff_').reset_index().drop('index',1)
-    dfs = pd.concat([df_date,df_diff],axis=1)
+    df_now_next['diff'] = (df_now_next['next_date'] - df_now_next['date']) / np.timedelta64(1, 'D')
+    df_date = create_date_diff(df_now_next, 'date', 'create_').reset_index().drop('index', 1)
+    df_diff = create_date_diff(df_now_next, 'diff', 'datediff_').reset_index().drop('index', 1).astype(float)
+    dfs = pd.concat([df_date, df_diff], axis=1)
     return dfs
 
 
-df_date = posts_create_data()
-
-
-def combine_data(title,author,posts,create,file,write_mode):
-    all_data = pd.concat([title,author,posts,create],axis=1)
+def combine_data(title, author, posts, create):
+    all_data = pd.concat([title, author, posts, create], axis=1)
     print all_data.shape
-    all_data.to_csv(file,delimiter=',',header=True,index=True,mode=write_mode)
+    return all_data
 
-
-combine_data(df_title,df_msg,df_posts,df_date,'lower_back_pain.csv','w')
 
 # updated = scrape_element('updated', '.DateUpdated')
 # author = scrape_element('author', '.Author')
+def main():
+    forum_link = 'http://www.spine-health.com/forum/categories/lower-back-pain'
+    web_links = scrape_links(forum_link)
+    matching = scrape_unique_links(web_links)
+    i = 1
+    for m in matching:
+        print m, '\n', i, '\n', datetime.now()
+        response = requests.get(m)
+        soup = bs4.BeautifulSoup(response.text)
+        df_title = title_data(soup)
+        df_msg = messages_date(soup)
+        df_posts = posts_cnt_data(soup)
+        df_date = posts_create_data(soup)
+        all_data = combine_data(df_title, df_msg, df_posts, df_date)
+        if i == 1:
+            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=True, index=True, mode='w')
+        else:
+            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=False, index=True, mode='a')
+        i += 1
+
+
+
+
 
 # MAIN CODE
-# if __name__="__main__":
-#     main(websites)
+if __name__="__main__":
+    main()
