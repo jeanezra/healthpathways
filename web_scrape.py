@@ -92,7 +92,7 @@ def title_data(soup):
 # Data
 # Distributions
 # Length per post
-def messages_date(soup):
+def messages_data(soup):
     messages = scrape_element(soup, 'messages', '.Message')
     msg_lengths = []
     for k, v in messages.items():
@@ -165,7 +165,7 @@ def main():
         response = requests.get(m)
         soup = bs4.BeautifulSoup(response.text)
         df_title = title_data(soup)
-        df_msg = messages_date(soup)
+        df_msg = messages_data(soup)
         df_posts = posts_cnt_data(soup)
         df_date = posts_create_data(soup)
         all_data = combine_data(df_title, df_msg, df_posts, df_date)
