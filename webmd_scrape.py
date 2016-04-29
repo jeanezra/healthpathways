@@ -64,7 +64,7 @@ def scrape_unique_links(links):
     print len(links_unq)
     matching = [s for s in links_unq if "forum" in s]
     print len(matching)
-    download_iterator(matching, 'bp', len(links_unq))
+    # download_iterator(matching, 'bp', len(links_unq))
     return matching
 
 
@@ -85,7 +85,6 @@ def title_data(soup):
     df_title = DataFrame(pd.Series(len(title_text)))
     df_title.columns = ['title_length']
     return df_title
-
 
 
 def messages_data(soup):
@@ -142,9 +141,12 @@ def posts_first_create(date):
 def posts_create_data(soup):
     date = scrape_element(soup, 'dates', '.first_posted_fmt')
     dates = scrape_element(soup, 'dates', '.posted_fmt')
-    df_create_date = posts_first_create(date)
-    df_create_dates2 = posts_create_clean(dates)
-    df_create_dates3 = pd.concat([df_create_date[['date']],df_create_dates2[['date']]],axis=0)
+    if len(dates) == 0:
+        df_create_dates3 = posts_first_create(date)
+    else:
+        df_create_date = posts_first_create(date)
+        df_create_dates2 = posts_create_clean(dates)
+        df_create_dates3 = pd.concat([df_create_date[['date']],df_create_dates2[['date']]],axis=0)
     df_create_dates3.reset_index(inplace=True)
     df_create_dates3 = df_create_dates3[['date']].sort_values('date',ascending=True)
     df_create_dates3.reset_index(inplace=True)
@@ -170,20 +172,22 @@ def main():
     forum_link = 'http://exchanges.webmd.com/back-pain-exchange'
     web_links = scrape_links(forum_link)
     matching = scrape_unique_links(web_links)
-i = 1
+i = 0
 for m in matching:
-    print m, '\n', i, '\n', datetime.now()
-    response = requests.get(m)
+    print i, '\n', datetime.now()
+    response = requests.get(matching[i])
+    print matching[i]
     soup = bs4.BeautifulSoup(response.text)
     df_title = title_data(soup)
     df_msg = messages_data(soup)
     df_date = posts_create_data(soup)
     all_data = combine_data(df_title, df_msg, df_date)
-    if i == 1:
+    if i == 0:
         all_data.to_csv('back_pain.csv', delimiter=',', header=True, index=True, mode='w')
     else:
         all_data.to_csv('back_pain.csv', delimiter=',', header=False, index=True, mode='a')
     i += 1
+
 
 
 # MAIN CODE
