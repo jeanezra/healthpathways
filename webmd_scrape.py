@@ -82,8 +82,10 @@ def scrape_element(soup, prefix, element):
 
 def title_data(soup):
     title_text = scrape_element(soup,'title','.first_item_title_fmt')
-    df_title = DataFrame(pd.Series(len(title_text)))
-    df_title.columns = ['title_length']
+    df_title1 = DataFrame(pd.Series(title_text['title0']))
+    df_title2 = DataFrame(pd.Series(len(title_text['title0'])))
+    df_title = pd.concat([df_title1,df_title2],axis=1)
+    df_title.columns = ['title','title_length']
     return df_title
 
 
@@ -175,7 +177,7 @@ def main():
 i = 0
 for m in matching:
     print i, '\n', datetime.now()
-    response = requests.get(matching[i])
+    response = requests.get(matching[i], timeout=5)
     print matching[i]
     soup = bs4.BeautifulSoup(response.text)
     df_title = title_data(soup)

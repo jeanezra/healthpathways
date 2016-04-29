@@ -62,7 +62,7 @@ def scrape_unique_links(links):
     print len(links_unq)
     matching = [s for s in links_unq if "#latest" in s]
     print len(matching)
-    download_iterator(matching, 'lbp', len(links_unq))
+    # download_iterator(matching, 'lbp', len(links_unq))
     return matching
 
 
@@ -84,8 +84,10 @@ def scrape_element(soup, prefix, element):
 def title_data(soup):
     title = str(soup.find('div', class_='PageTitle').h1)
     title_text = title.replace('<h1>', '').replace('</h1>', '')
-    df_title = DataFrame(pd.Series(len(title_text)))
-    df_title.columns = ['title_length']
+    df_title1 = DataFrame(pd.Series(title_text))
+    df_title2 = DataFrame(pd.Series(len(title_text)))
+    df_title = pd.concat([df_title1,df_title2],axis=1)
+    df_title.columns = ['title','title_length']
     return df_title
 
 
@@ -159,26 +161,26 @@ def main():
     forum_link = 'http://www.spine-health.com/forum/categories/lower-back-pain'
     web_links = scrape_links(forum_link)
     matching = scrape_unique_links(web_links)
-    i = 1
-    for m in matching:
-        print m, '\n', i, '\n', datetime.now()
-        response = requests.get(m)
-        soup = bs4.BeautifulSoup(response.text)
-        df_title = title_data(soup)
-        df_msg = messages_data(soup)
-        df_posts = posts_cnt_data(soup)
-        df_date = posts_create_data(soup)
-        all_data = combine_data(df_title, df_msg, df_posts, df_date)
-        if i == 1:
-            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=True, index=True, mode='w')
-        else:
-            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=False, index=True, mode='a')
-        i += 1
+i = 1
+for m in matching:
+    print m, '\n', i, '\n', datetime.now()
+    response = requests.get(m)
+    soup = bs4.BeautifulSoup(response.text)
+    df_title = title_data(soup)
+    df_msg = messages_data(soup)
+    df_posts = posts_cnt_data(soup)
+    df_date = posts_create_data(soup)
+    all_data = combine_data(df_title, df_msg, df_posts, df_date)
+    if i == 1:
+        all_data.to_csv('lower_back_pain.csv', delimiter=',', header=True, index=True, mode='w')
+    else:
+        all_data.to_csv('lower_back_pain.csv', delimiter=',', header=False, index=True, mode='a')
+    i += 1
 
 
 
 
 
 # MAIN CODE
-if __name__="__main__":
+if __name__=="__main__":
     main()
