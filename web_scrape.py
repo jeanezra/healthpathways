@@ -1,9 +1,10 @@
 import requests
 import bs4
 import pandas as pd
-from pandas import DataFrame
+from pandas import Series, DataFrame
 import numpy as np
 from datetime import datetime
+
 
 
 # FUNCTIONS
@@ -149,8 +150,8 @@ def posts_create_data(soup):
     return dfs
 
 
-def combine_data(title, author, posts, create):
-    all_data = pd.concat([title, author, posts, create], axis=1)
+def combine_data(links, title, author, posts, create):
+    all_data = pd.concat([links, title, author, posts, create], axis=1)
     print all_data.shape
     return all_data
 
@@ -161,21 +162,24 @@ def main():
     forum_link = 'http://www.spine-health.com/forum/categories/lower-back-pain'
     web_links = scrape_links(forum_link)
     matching = scrape_unique_links(web_links)
-i = 1
-for m in matching:
-    print m, '\n', i, '\n', datetime.now()
-    response = requests.get(m)
-    soup = bs4.BeautifulSoup(response.text)
-    df_title = title_data(soup)
-    df_msg = messages_data(soup)
-    df_posts = posts_cnt_data(soup)
-    df_date = posts_create_data(soup)
-    all_data = combine_data(df_title, df_msg, df_posts, df_date)
-    if i == 1:
-        all_data.to_csv('lower_back_pain.csv', delimiter=',', header=True, index=True, mode='w')
-    else:
-        all_data.to_csv('lower_back_pain.csv', delimiter=',', header=False, index=True, mode='a')
-    i += 1
+    i = 1
+    for m in matching:
+        print m, '\n', i, '\n', datetime.now()
+        response = requests.get(m)
+        soup = bs4.BeautifulSoup(response.text)
+        df_links = DataFrame(Series(m))
+        df_links.columns = ['links']
+        df_title = title_data(soup)
+        df_msg = messages_data(soup)
+        df_posts = posts_cnt_data(soup)
+        df_date = posts_create_data(soup)
+        all_data = combine_data(df_links, df_title, df_msg, df_posts, df_date)
+        if i == 1:
+            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=True, index=True, mode='w')
+        else:
+            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=False, index=True, mode='a')
+        i += 1
+    print 'Done'
 
 
 

@@ -174,26 +174,28 @@ def main():
     forum_link = 'http://exchanges.webmd.com/back-pain-exchange'
     web_links = scrape_links(forum_link)
     matching = scrape_unique_links(web_links)
-i = 0
-for m in matching:
-    print i, '\n', datetime.now()
-    response = requests.get(matching[i], timeout=5)
-    print matching[i]
-    soup = bs4.BeautifulSoup(response.text)
-    df_title = title_data(soup)
-    df_msg = messages_data(soup)
-    df_date = posts_create_data(soup)
-    all_data = combine_data(df_title, df_msg, df_date)
-    if i == 0:
-        all_data.to_csv('back_pain.csv', delimiter=',', header=True, index=True, mode='w')
-    else:
-        all_data.to_csv('back_pain.csv', delimiter=',', header=False, index=True, mode='a')
-    i += 1
+    i = 0
+    for m in matching:
+        print i, '\n', datetime.now()
+        response = requests.get(matching[i], timeout=5)
+        print matching[i]
+        soup = bs4.BeautifulSoup(response.text)
+        df_title = title_data(soup)
+        df_msg = messages_data(soup)
+        df_date = posts_create_data(soup)
+        all_data = combine_data(df_title, df_msg, df_date)
+        if i == 0:
+            all_data.to_csv('back_pain.csv', delimiter=',', header=True, index=True, mode='w')
+        else:
+            all_data.to_csv('back_pain.csv', delimiter=',', header=False, index=True, mode='a')
+        i += 1
+
+
 
 
 
 # MAIN CODE
-if __name__="__main__":
+if __name__=="__main__":
     main()
 
 # # More than one page?
