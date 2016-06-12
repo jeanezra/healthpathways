@@ -100,6 +100,9 @@ def messages_data(soup):
     msg_lengths = []
     for k, v in messages.items():
         msg_lengths.append(len(v))
+        text = Series(str(np.array(v.encode('utf-8'))))
+        print text
+        text.to_csv('messages.csv', sep=',', header=False, index=False, mode='a')
     df_msg_lgth = DataFrame(msg_lengths)
     df_msg_describe = DataFrame(df_msg_lgth.describe()).T
     cols = df_msg_describe.columns
