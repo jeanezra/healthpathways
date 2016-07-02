@@ -4,6 +4,7 @@ import pandas as pd
 from pandas import Series, DataFrame
 import numpy as np
 from datetime import datetime
+import sys
 
 
 
@@ -95,14 +96,15 @@ def title_data(soup):
 # Data
 # Distributions
 # Length per post
-def messages_data(soup):
+def messages_data(soup,message_csv):
     messages = scrape_element(soup, 'messages', '.Message')
     msg_lengths = []
+    pd.set_option('display.max_colwidth', -1)
     for k, v in messages.items():
         msg_lengths.append(len(v))
         text = Series(str(np.array(v.encode('utf-8'))))
         print text
-        text.to_csv('messages.csv', sep=',', header=False, index=False, mode='a')
+        text.to_csv(message_csv, sep=',', header=False, index=False, mode='a')
     df_msg_lgth = DataFrame(msg_lengths)
     df_msg_describe = DataFrame(df_msg_lgth.describe()).T
     cols = df_msg_describe.columns
@@ -161,8 +163,8 @@ def combine_data(links, title, author, posts, create):
 
 # updated = scrape_element('updated', '.DateUpdated')
 # author = scrape_element('author', '.Author')
-def main():
-    forum_link = 'http://www.spine-health.com/forum/categories/lower-back-pain'
+def main(f_link, message_csv, stats_csv):
+    forum_link = f_link
     web_links = scrape_links(forum_link)
     matching = scrape_unique_links(web_links)
     i = 1
@@ -173,14 +175,14 @@ def main():
         df_links = DataFrame(Series(m))
         df_links.columns = ['links']
         df_title = title_data(soup)
-        df_msg = messages_data(soup)
+        df_msg = messages_data(soup,message_csv)
         df_posts = posts_cnt_data(soup)
         df_date = posts_create_data(soup)
         all_data = combine_data(df_links, df_title, df_msg, df_posts, df_date)
         if i == 1:
-            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=True, index=True, mode='w')
+            all_data.to_csv(stats_csv, delimiter=',', header=True, index=True, mode='w')
         else:
-            all_data.to_csv('lower_back_pain.csv', delimiter=',', header=False, index=True, mode='a')
+            all_data.to_csv(stats_csv, delimiter=',', header=False, index=True, mode='a')
         i += 1
     print 'Done'
 
@@ -190,4 +192,7 @@ def main():
 
 # MAIN CODE
 if __name__=="__main__":
-    main()
+    forumlink = sys.argv[1]
+    messagecsv = sys.argv[2]
+    statscsv = sys.argv[3]
+    main(forumlink, messagecsv, statscsv)
